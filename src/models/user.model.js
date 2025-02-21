@@ -19,7 +19,6 @@ const userSchema = mongoose.Schema( {
     },
     avatar: {
         type: String,       // cloudinary se string lenge
-        required: true
     },
     password: {
         type: String,
