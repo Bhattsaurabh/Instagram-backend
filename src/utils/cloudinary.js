@@ -1,8 +1,6 @@
-import {v2 as cloudinary} from "cloudinary"
+import { v2 as cloudinary } from "cloudinary"
 import fs from "fs"     //file system
 import dotenv from "dotenv"
-import { asyncHandler } from "./asyncHandler";
-import { ApiError } from "./ApiError";
 
 
 dotenv.config({
@@ -10,39 +8,39 @@ dotenv.config({
 })
 
 
-cloudinary.config({ 
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-    api_key: process.env.CLOUDINARY_API_KEY, 
-    api_secret:process.env.CLOUDINARY_API_SECRET
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 
-const uploadOnCloudinary = async(localPath) =>{
+const uploadOnCloudinary = async (localFilePath) => {
 
 
     try {
-        if(!localPath)
-        {
-            return null
-        }
-    
-        const response = await cloudinary.uploader.upload(localPath, {
+   
+           if(!localFilePath)
+               return null;
+          
+           // upload the file on cloudinary
+           const response =  await cloudinary.uploader.upload(localFilePath, {
                 resource_type: "auto"
-            })
-        
-        fs.unlink(localPath)
-    
-        if(!response)
-        {
-            throw new ApiError(400, "something went wrong failed to upload file")
-        }
-    
-        return response
-    } catch (error) {
-        throw new ApiError(500, "Internal server error failed to upload file")
-    }
+           })
+   
+           //file has been uploaded successfully
+           console.log("file is uploaded on cloudinary", response.url);
+           fs.unlinkSync(localFilePath)
+           //console.log(response);
+           return response
+           
+       } catch (error) {
+           console.log("Files are not uploaded.", error)
+           fs.unlinkSync(localFilePath)    //remove the locally saved temporary file as the upload operation failed !
+           return null; 
+       }
 
 
 }
 
-export {uploadOnCloudinary}
+export { uploadOnCloudinary }

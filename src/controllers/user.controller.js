@@ -1,26 +1,27 @@
 import {asyncHandler} from '../utils/asyncHandler.js'
-import {apiError} from '../utils/ApiError.js'
-import {apiResponse} from '../utils/ApiResponse.js'
+import {ApiError} from '../utils/ApiError.js'
+import {ApiResponse} from '../utils/ApiResponse.js'
 import {uploadOnCloudinary} from '../utils/cloudinary.js'
 import {User} from '../models/user.model.js'
 import mongoose from 'mongoose'
 import jwt from 'jsonwebtoken'
 
+
 const generateAccessandRefreshTokens = async(userId) =>{
 
    try {
-     const user = await User.findbyId(userId)
+     const user = await User.findById(userId)
      const accessToken = user.generateAccessToken()
-     const refreshToken = user.generaterefreshToken()
+     const refreshToken = user.generateRefreshToken()
  
      user.refreshToken = refreshToken
  
-     await user.save({ validateBeforesave: false })     //saving refreshtoken in user db
+     await user.save({ validateBeforeSave: false })     //saving refreshtoken in user db
  
      return {accessToken, refreshToken}
  
    } catch (error) {
-        throw new apiError(500, "something went wrong while generating accessToken and refreshToken")
+        throw new (500, "something went wrong while generating accessToken and refreshToken")
    }
 
 }
@@ -39,15 +40,16 @@ const userRegister = asyncHandler(async(req, res)   =>{
 
     try {
         const {username, email, password}  = req.body
-    
+        //console.log(username, email, password)
+
         if(!username || username.trim() === "" || !email || email.trim() === "" || !password || password.trim() === "") 
         {
-            throw new apiError(400, "All fields are required")
+            throw new ApiError(400, "All fields are required")
         }
     
-        if(req.body.email.indexof('@') == -1)
+        if(req.body.email.indexOf('@') == -1)
         {
-            throw new apiError(401, "Email is not valid")
+            throw new ApiError(401, "Email is not valid")
         }
     
         const checkUser = await User.findOne({
@@ -56,41 +58,42 @@ const userRegister = asyncHandler(async(req, res)   =>{
     
         if(checkUser)
         {
-            throw new apiError(400, "User is already registered")
+            throw new ApiError(400, "User is already registered")
         }
     
         let avatarLocalPath
-        if(req.files)
+        if(req.file.path)
         {
-            avatarLocalPath = req.files?.path 
+            avatarLocalPath = req.file?.path 
         }
     
         const avatarCloud = await uploadOnCloudinary(avatarLocalPath)
-    
+        console.log(avatarCloud)
         const user = await User.create({
-            username: username.toLowercase(),
+            username: username.toLowerCase(),
             email: email,
-            avatar: avatarCloud === null ? "": avatarCloud.url,
+            avatar: avatarCloud?.url,
             password: password
         })
-    
-        const createdUser = await User.findbyId(user._id).select("-password -refreshToken")
-    
+        
+        //console.log(user)
+        const createdUser = await User.findById(user._id).select("-password -refreshToken")
+        
+        //console.log(createdUser);
+        
         if(!createdUser)
         {
-            throw new apiError(500, "Internal server error failed to create user")
+            throw new ApiError(500, "Internal server error failed to create user")
         }
     
         return res
         .status(200)
-        .json( new apiResponse(200, createdUser, "User registered successfully"))
+        .json( new ApiResponse(200, createdUser, "User registered successfully"))
     
     
     } catch (error) {
-        throw new apiError(500, error.message || "Something went wrong failed to create user")
+        throw new ApiError(500, error.message || "Something went wrong failed to create user")
     }
-
-
 
 
 
@@ -109,31 +112,34 @@ const loginUser = asyncHandler(async(req, res)  =>{
 
    try {
      const {username, email, password} = req.body
+     //console.log(username, email,  password)
  
      if(!username && !email)
      {
-         throw new apiError(400, "username or email is required")
+         throw new ApiError(400, "username or email is required")
      }
  
      if(!password)
      {
-         throw new apiError(400, "password is required")
+         throw new ApiError(400, "password is required")
      }
  
      const user = await User.findOne({
          $or: [{username}, {email}]
      })
+
+    // console.log(user)
  
      if(!user)
      {
-         throw new apiError(400, "Invalid user")
+         throw new ApiError(400, "Invalid user")
      }
  
      const checkValidPassword = await user.isPasswordCorrect(password)
  
      if(!checkValidPassword)
      {
-         throw new apiError(500,"Invalid Password")
+         throw new ApiError(500,"Invalid Password")
      }
  
       // getting accesstoken and refreshtoken
@@ -143,7 +149,7 @@ const loginUser = asyncHandler(async(req, res)  =>{
  
      const{accessToken, refreshToken} = await generateAccessandRefreshTokens(user._id)
  
-     const loggedInUser = await User.findbyId(user._id).select("-password -refreshToken" )
+     const loggedInUser = await User.findById(user._id).select("-password -refreshToken" )
  
      // sending cookies
      const options = {
@@ -155,10 +161,10 @@ const loginUser = asyncHandler(async(req, res)  =>{
      .status(200)
      .cookie("accessToken", accessToken, options)
      .cookie("refreshToken", accessToken, options)
-     .json( new apiResponse(200, {user: loggedInUser, accessToken, refreshToken},
+     .json( new ApiResponse(200, {user: loggedInUser, accessToken, refreshToken},
               "User logged in successfully" ))
    } catch (error) {
-        throw new apiError(500, error.message || "something went wrong try again to log in")
+        throw new ApiError(500, error.message || "something went wrong try again to log in")
    }
 
 
@@ -173,7 +179,7 @@ const loginUser = asyncHandler(async(req, res)  =>{
 
 const logoutUser = asyncHandler(async(req, res) => {
 
-    await User.findbyIdAndUpdate(
+    await User.findByIdAndUpdate(
         req.user?._id,
         {
             $unset: {
@@ -194,7 +200,7 @@ const logoutUser = asyncHandler(async(req, res) => {
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json( new apiResponse(200, {}, "user logout successfully")) 
+    .json( new ApiResponse(200, {}, "user logout successfully")) 
 
 })
 
@@ -210,21 +216,21 @@ const refreshAccessToken = asyncHandler( async(req, res) =>{
     
         if(!incomingRefreshToken)
         {
-            throw new apiError(400, "unauthorized request")
+            throw new ApiError(400, "unauthorized request")
         }
     
         const decodedToken =  jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
     
-        const user = await User.findbyId(decodedToken._id)
+        const user = await User.findById(decodedToken._id)
     
         if(!user)
         {
-            throw new apiError(401, "Invalid refresh Token")
+            throw new ApiError(401, "Invalid refresh Token")
         }
     
         if(incomingRefreshToken !== user?.refreshToken)
         {
-            throw new apiError(401, "refreshToken is expired or used")
+            throw new ApiError(401, "refreshToken is expired or used")
         }
     
         const {accessToken, newrefreshToken } = await generateAccessandRefreshTokens(user._id)
@@ -238,11 +244,11 @@ const refreshAccessToken = asyncHandler( async(req, res) =>{
         .status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", newrefreshToken, options)
-        .json( new apiResponse(200, {accessToken, newrefreshToken}, "access token refreshed"))
+        .json( new ApiResponse(200, {accessToken, newrefreshToken}, "access token refreshed"))
     
     
     } catch (error) {
-        throw new apiError(400, error.message || "failed to refresh token")
+        throw new ApiError(400, error.message || "failed to refresh token")
     }
 
 })
@@ -255,18 +261,18 @@ const passwordChange  = asyncHandler(async(req, res) =>{
    try {
      const {oldPassword, newPassword} = req.body
  
-     const user = await User.findbyId(req.user?._id)
+     const user = await User.findById(req.user?._id)
  
      if(!user)
      {
-         throw new apiError(500, "user not found")
+         throw new ApiError(500, "user not found")
      }
  
      const checkValidPassword = await user.isPasswordCorrect(oldPassword)
  
      if(!checkValidPassword)
      {
-         throw new apiResponse(500, "Incorrect Password")
+         throw new ApiResponse(500, "Incorrect Password")
      }
  
      user.password = newPassword
@@ -274,10 +280,10 @@ const passwordChange  = asyncHandler(async(req, res) =>{
  
      return res
      .status(200)
-     .json(new apiResponse(200, {}, "Password change successfully"))
+     .json(new ApiResponse(200, {}, "Password change successfully"))
  
    } catch (error) {
-        throw new apiError(400, error.message || "Something went wrong failed to change password")
+        throw new ApiError(400, error.message || "Something went wrong failed to change password")
    }
 
     
@@ -289,26 +295,29 @@ const passwordChange  = asyncHandler(async(req, res) =>{
 const updateAvatar = asyncHandler(async(req, res)   =>{
 
     try {
-        const localPath= req.files?.path
+        const localPath= req.file?.path
         const user = req.user
+        console.log(user);
+        
+        if(!user)
+            {
+                throw new ApiError(400,"unauthorized user")
+            }
     
         if(!localPath)
         {
-            throw new apiError(400,"Files is required")
+            throw new ApiError(400,"Files is required")
         }
-        if(!user)
-            {
-                throw new apiError(400,"unauthorized user")
-            }
+       
     
         const response = await uploadOnCloudinary(localPath)
     
         if(!response)
         {
-            throw new apiError(401, "Failed to upload file try again")
+            throw new ApiError(401, "Failed to upload file try again")
         }
         const avatarCloudPath = response?.url
-        const updateavatar = await User.findbyIdAndUpdate(user?._id,
+        const updateavatar = await User.findByIdAndUpdate(user?._id,
             {
                 $set:{
                     avatar: avatarCloudPath
@@ -321,11 +330,11 @@ const updateAvatar = asyncHandler(async(req, res)   =>{
 
         return res
         .status(200)
-        .json(new apiResponse(200, {updateavatar}, "avatar successfully updated"))
+        .json(new ApiResponse(200, {updateavatar}, "avatar successfully updated"))
 
 
     } catch (error) {
-        throw new apiError(400, error.message || "something went wrong failed to update avatar")
+        throw new ApiError(400, error.message || "something went wrong failed to update avatar")
     }
 
 
@@ -348,19 +357,21 @@ const getCurrentUser = asyncHandler( async(req, res) =>{
 const updateAccountDetails = asyncHandler(async(req, res) =>{
 
     try {
-        const {updateDetails} = req.body
+        const updateDetails = req.body
+        //console.log(updateDetails);
+        
         const user = req.user
     
         if(!updateDetails)
         {
-            throw new apiError(400, "something need to be updated")
+            throw new ApiError(400, "something need to be updated")
         }
         if(!user)
         {
-            throw new apiError(400, "unauthorized user")
+            throw new ApiError(400, "unauthorized user")
         }
     
-        const updatedAccount = User.findbyIdAndUpdate(user?._id,
+        const updatedAccount = await User.findByIdAndUpdate(user?._id,
             {
                 $set: updateDetails
             },
@@ -368,14 +379,16 @@ const updateAccountDetails = asyncHandler(async(req, res) =>{
                 new: true
             }
         ).select("-password -refreshToken")
-    
+        
+       // console.log(updatedAccount);
+        
     
         return res
         .status(200)
-        .json( new apiResponse(200, updatedAccount, "user account updated successfully"))
+        .json( new ApiResponse(200, updatedAccount, "user account updated successfully"))
     
     } catch (error) {
-        throw new apiError(400, error.message || "something went wrong failed to update account details")
+        throw new ApiError(400, error.message || "something went wrong failed to update account details")
     }
 
 })
@@ -384,4 +397,13 @@ const updateAccountDetails = asyncHandler(async(req, res) =>{
 
 
 
-export {userRegister, loginUser, logoutUser, generateAccessandRefreshTokens, updateAccountDetails, updateAvatar, getCurrentUser, refreshAccessToken, passwordChange}
+export {userRegister,
+     loginUser,
+      logoutUser,
+       generateAccessandRefreshTokens,
+        updateAccountDetails,
+         updateAvatar,
+          getCurrentUser,
+           refreshAccessToken,
+            passwordChange
+        }

@@ -5,11 +5,9 @@ import {upload} from '../middlewares/multer.middleware.js'
 import {userRegister,
     loginUser,
      logoutUser,
-      generateAccessandRefreshTokens,
        updateAccountDetails,
         updateAvatar,
          getCurrentUser,
-          refreshAccessToken,
            passwordChange
        } from '../controllers/user.controller.js'
 
@@ -18,8 +16,10 @@ const router  = Router()
 
 
 router.route("/user-register").post(upload.single('avatar') ,userRegister)
+
 router.route("/login-user").post(loginUser)
 
+router.route("/logout-user").post(verifyJWT, logoutUser)
 
 router.route("/update-avatar").patch( verifyJWT, upload.single('avatar'), updateAvatar)
 
