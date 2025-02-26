@@ -2,12 +2,11 @@ import mongoose from "mongoose";
 
 const postSchema = mongoose.Schema({
 
-    image: [
+    image: 
         {
             type: String,       //cloudinary se
             required: true
-        }
-    ],
+        },
     caption: {
         type: String
     },
