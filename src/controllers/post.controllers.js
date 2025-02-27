@@ -68,8 +68,6 @@ const createPost = asyncHandler(async(req, res) =>{
 
 })
 
-
-
 const updatePost = asyncHandler(async(req,res)  =>{
 
 
@@ -177,3 +175,34 @@ const deletePost = asyncHandler(async(req,res)  =>{
 
 
 })
+
+const getPostbyId = asyncHandler(async(req, res) =>{
+
+
+    try {
+        if(!req.user)
+        {
+            throw new ApiError(400, "unauthorized user")
+        }
+    
+        const postId = req.params
+    
+        const post = await Post.findbyId(postId)
+    
+        if(!post)
+        {
+            throw new ApiError(400, "post not found")
+        }
+    
+        return res
+        .status(200)
+        .json( new ApiResponse(200, post, "Post fetched successfully"))
+    
+    } catch (error) {
+        throw new ApiError(400, "something went wrong failed to fetch post")
+    }
+
+})
+
+
+export {createPost, updatePost, deletePost, getPostbyId}
