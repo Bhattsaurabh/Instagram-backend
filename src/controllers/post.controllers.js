@@ -67,3 +67,113 @@ const createPost = asyncHandler(async(req, res) =>{
 
 
 })
+
+
+
+const updatePost = asyncHandler(async(req,res)  =>{
+
+
+    try {
+        if(!req.user)
+        {
+            throw new ApiError(400, "unauthorized user")
+        }
+    
+        const postId = req.params
+    
+        if(!postId)
+        {
+            throw new ApiError(400, "Post not found")
+        }
+    
+        const newCaption = req.body
+        const newImageLocalPath = req.file?.path
+    
+        if(!newCaption && !newImageLocalPath)
+        {
+            throw new ApiError(401, "some updation required")
+        }
+    
+        const imageCloud = await uploadOnCloudinary(newImageLocalPath)
+    
+        if(newImageLocalPath && !imageCloud)
+        {
+            throw new ApiError(400, "file not uploaded")
+        }
+    
+        const checkUserandPost = await Post.findOne({
+            _id: postId,
+            owner: req.user._id
+        })
+    
+        if(!checkUserandPost)
+        {
+            throw new ApiError(401, "Unauthorized access")
+        }
+    
+        const updatePost = await Post.findByIdAndUpdate({
+            postId,
+            image: imageCloud ? imageCloud.url : Post.image,
+            caption: newCaption ? newCaption : Post.caption,
+        }).select("-password -refreshToken")
+    
+    
+        if(!updatePost)
+        {
+            throw new ApiError(500, "Internal server error failed to update post")
+        }
+    
+        return res
+        .status(200)
+        .json( new ApiResponse(200, updatePost, "Post successfully updated"))
+    
+    } catch (error) {
+         throw new ApiError(400, error.message || "something went wrong failed to update post")
+    }
+
+
+})
+
+const deletePost = asyncHandler(async(req,res)  =>{
+
+    try {
+        if(!req.user)
+        {
+            throw new ApiError(400, "unauthorized user")
+        }
+    
+        const postId = req.params
+    
+        if(!postId)
+        {
+            throw new ApiError(400, "post not found")
+        }
+    
+    
+        const checkUserandPost = await Post.findOne({
+            _id: postId,
+            owner: req.user?._id
+        })
+    
+        if(!checkUserandPost)
+        {
+            throw new ApiResponse(400, "unauthorized access")
+        }
+    
+        const deletePost = await Post.findByIdAndDelete(postId)
+    
+        if(!deletePost)
+        {
+            throw new ApiError(500, "Internal server error failed to delete the post")
+        }
+    
+        return res
+        .status(200)
+        .json( new ApiResponse(200, deletePost,"Post deleted successfully"))
+    } catch (error) {
+         throw new ApiError(400, error.message || "Something went wrong failed to delete post"
+         )
+    }
+
+
+})
