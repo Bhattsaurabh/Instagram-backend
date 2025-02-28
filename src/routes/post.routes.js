@@ -8,7 +8,6 @@ import {
     getPostbyId
 } from '../controllers/post.controller.js' 
 
-import { Router } from 'express'
 
 
 const router = Router()
@@ -26,11 +25,11 @@ router.route("/create-post").post(verifyJWT,
     }
 ]), createPost)
 
-router.route("/update-post/:postId").patch(verifyJWT, updatePost)
+router.route("/update-post/:postId").patch(verifyJWT,upload.single('image'), updatePost)
 
 router.route("/delete-post/:postId").delete(verifyJWT, deletePost)
 
-router.route("get-postbyId/:postId").get(verifyJWT, getPostbyId)
+router.route("/get-postbyId/:postId").get(verifyJWT, getPostbyId)
 
 
 
