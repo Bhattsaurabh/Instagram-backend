@@ -11,7 +11,7 @@ const postSchema = mongoose.Schema({
         type: String
     },
     audio: {
-        type: String
+        type: String    //cloudinary se
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
