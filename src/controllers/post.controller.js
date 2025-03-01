@@ -138,7 +138,7 @@ const updatePost = asyncHandler(async(req,res)  =>{
             {
                 new: true
             }
-            ).select("-password -refreshToken")
+            )
     
        // console.log(updatePost);
         
