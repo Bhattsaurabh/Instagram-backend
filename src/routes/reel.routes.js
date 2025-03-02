@@ -25,9 +25,9 @@ router.route("/publish-reel").post(verifyJWT,
     publishReel
 )
 
-router.route("/update-reel:/reelId").patch(verifyJWT, upload.single('thumbnail'), updateReel)
+router.route("/update-reel/:reelId").patch(verifyJWT, upload.single('thumbnail'), updateReel)
 
-router.route("/get-reel-By-Id:/reelId").get(verifyJWT, getReelById)
+router.route("/get-reel-By-Id/:reelId").get(verifyJWT, getReelById)
 
 router.route("/delete-reel/:reelId").delete(verifyJWT, deleteReel)
 

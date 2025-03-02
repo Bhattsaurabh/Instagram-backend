@@ -11,22 +11,22 @@ const publishReel = asyncHandler(async(req, res) =>{
 
 
     try {
-        if(req.user?._id)
+        if(!req.user?._id)
         {
              throw new ApiError(400, "unauthorized user")
         }
     
         const caption = req.body.caption
-    
+        
         let localVideoFile
     
-        if(req.files && Array.isArray(videoFile[0]) && videoFile.length > 0)
+        if(req.files && Array.isArray(req.files.videoFile) && req.files.videoFile.length > 0)
         {
             localVideoFile = req.files.videoFile[0].path
         }
         let localthumbnail
         
-        if(req.files && Array.isArray(thumbnail[0]) && thumbnail.length > 0)
+        if(req.files && Array.isArray(req.files.thumbnail) && req.files.thumbnail.length > 0)
         {
             localthumbnail = req.files.thumbnail[0].path
         }
@@ -35,7 +35,8 @@ const publishReel = asyncHandler(async(req, res) =>{
         {
             throw new ApiError(400, "file and thumbnail are required")
         }
-    
+        //console.log("caption :", caption, "reel: ", localVideoFile, "thumbnail :", localthumbnail)
+
         const videoFileCloud  = await uploadOnCloudinary(localVideoFile)
         const thumbnailCloud  = await uploadOnCloudinary(localthumbnail)
         
@@ -70,7 +71,7 @@ const updateReel = asyncHandler(async(req, res) =>{
 
 
     try {
-        if(req.user?._id)
+        if(!req.user?._id)
         {
             throw new ApiError(400, "unauthorized user")
         }
@@ -83,6 +84,8 @@ const updateReel = asyncHandler(async(req, res) =>{
     
         const newCaption = req.body.caption
         const newThumbnailLocalPath = req.file?.path
+
+        //console.log("reelId: ", reelId, "newCaption :", newCaption, "newthumbnail : ", newThumbnailLocalPath)
     
         if(!newCaption && !newThumbnailLocalPath)
         {
@@ -105,11 +108,11 @@ const updateReel = asyncHandler(async(req, res) =>{
 
         if(!newCaption)
             {
-                newCaption = checkUserandPost.caption
+                newCaption = checkUserandReel.caption
             }
         if(!newThumbnailLocalPath)
             {
-                newThumbnailLocalPath = checkUserandPost.thumbnail
+                newThumbnailLocalPath = checkUserandReel.thumbnail
             }
     
         const updatereel = await Reel.findByIdAndUpdate(
@@ -134,7 +137,7 @@ const updateReel = asyncHandler(async(req, res) =>{
     
         return res
         .status(200)
-        .json(new ApiResponse(200, updateReel, "Reel updated successfully"))
+        .json(new ApiResponse(200, updatereel, "Reel updated successfully"))
     } catch (error) {
         throw new ApiError(400, error.message || "something went wrong failed to update reel")
     }
@@ -145,13 +148,13 @@ const updateReel = asyncHandler(async(req, res) =>{
 const getReelById = asyncHandler(async(req, res)=>{
 
    try {
-     if(req.user?._id)
+     if(!req.user?._id)
      {
          throw new ApiError(400, "unauthorized user")
      }
  
      const {reelId} = req.params
-     if(reelId)
+     if(!reelId)
      {
          throw new ApiError(400, "Reel not found")
      }
@@ -178,7 +181,7 @@ const deleteReel = asyncHandler(async(req, res) =>{
 
 
    try {
-     if(req.user?._id)
+     if(!req.user?._id)
      {
          throw new ApiError(400, "unauthorized user")
      }
