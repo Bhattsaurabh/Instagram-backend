@@ -29,7 +29,7 @@ router.route("/update-post/:postId").patch(verifyJWT,upload.single('image'), upd
 
 router.route("/delete-post/:postId").delete(verifyJWT, deletePost)
 
-router.route("/get-postbyId/:postId").get(verifyJWT, getPostbyId)
+router.route("/get-reelbyId/:postId").get(verifyJWT, getPostbyId)
 
 
 
