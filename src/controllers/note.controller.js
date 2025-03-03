@@ -15,7 +15,6 @@ const createNote = asyncHandler(async(req, res) =>  {
         }
     
         const note = req.body.note
-        const audio = req.file.audio
     
         if(!note)
         {
@@ -24,10 +23,13 @@ const createNote = asyncHandler(async(req, res) =>  {
     
         let audioFileLocalpath
     
-        if(audio)
+        if(req.file)
         {
-            audioFileLocalpath  = req.file.audio.path
+            audioFileLocalpath  = req.file.path
         }
+
+       // console.log("note :" , note, "audio : ", audioFileLocalpath);
+        
     
         let audioFileCloud
         if(audioFileLocalpath)
@@ -78,14 +80,18 @@ try {
         }
     
         const newnote  = req.body.note
-        const audio  = req.file.audio
     
-        if(!newnote && !audio)
+    
+        if(!newnote && ! req.file)
         { 
             throw new ApiError(400, "some updation required")
         }
     
-        let audioFileLocalpath = req.file.audio.path
+        let audioFileLocalpath = req.file?.path
+
+        //console.log("noteId: ", noteId, "newnote :", newnote, "audio :", audioFileLocalpath);
+        
+
         let audioFileCloud
         if(audioFileLocalpath)
         {
@@ -110,13 +116,13 @@ try {
             oldNote  = checkUserandNote.note
         }
         let oldAudioFile
-        if(!audio)
+        if(!req.file)
         {
             oldAudioFile  = checkUserandNote.audio
         }
     
     
-        const updatenote = await Note.findbyIdAndUpdate(
+        const updatenote = await Note.findByIdAndUpdate(
             {
                 _id: noteId
             },
@@ -204,7 +210,7 @@ const deleteNote = asyncHandler(async(req, res) =>{
         throw new ApiError(400, "unauthorized access user with note not found")
     }
 
-    const deletenote = await Note.findbyIdAndDelete(noteId)
+    const deletenote = await Note.findByIdAndDelete(noteId)
 
     if(!deletenote)
     {
@@ -213,7 +219,7 @@ const deleteNote = asyncHandler(async(req, res) =>{
 
     return res
     .status(200)
-    .json( new ApiResponse(200, deleteNote, "Note deleted successfully"))
+    .json( new ApiResponse(200, deletenote, "Note deleted successfully"))
 
 
 })
