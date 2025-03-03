@@ -33,5 +33,4 @@ router.route("/delete-reel/:reelId").delete(verifyJWT, deleteReel)
 
 
 
-
 export default router
