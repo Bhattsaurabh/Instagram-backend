@@ -3,7 +3,9 @@ import { ApiError } from '../utils/ApiError.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import { Comment } from '../models/comment.model.js'
-import { appendFile } from 'fs'
+import {Post} from '../models/post.model.js'
+import {Reel} from '../models/reel.model.js'
+
 
 
 const createComment = asyncHandler(async (req, res) => {
@@ -14,11 +16,12 @@ const createComment = asyncHandler(async (req, res) => {
             throw new ApiError(400, "unauthorized user")
         }
 
-        const { reelId } = req.params
-        const { postId } = req.params
+        const { Id } = req.params
         const { content } = req.body
 
-        if (!reelId && !postId) {
+        //console.log("ID: ", Id, "comment :", content)
+
+        if (!Id) {
             throw new ApiError(400, "post not found")
         }
 
@@ -26,10 +29,23 @@ const createComment = asyncHandler(async (req, res) => {
             throw new ApiError(400, "comment required")
         }
 
+        const reelId = await Reel.findOne({_id: Id})
+        const postId = await Post.findOne({_id: Id})
+
+        //console.log(reelId);
+        //console.log(postId);
+        
+        
+        
+        if(!reelId && !postId)
+        {
+            throw new ApiError(404, "post not exist")
+        }
+
         const addComment = await Comment.create({
             content: content,
-            reel: reelId,
-            post: postId,
+            reel: reelId ? reelId._id : null,
+            post: postId ? postId._id : null,
             owner: req.user?._id
         })
 
@@ -63,7 +79,10 @@ const updateComment = asyncHandler(async (req, res) => {
             throw new ApiError(404, "comment not found")
         }
 
-        const newComment = req.body
+        const newComment = req.body.content
+
+       // console.log("commentId: ", commentId, "newcomment :", newComment);
+        
 
         if (!newComment) {
             throw new ApiError(400, "some change in comment required")
@@ -76,17 +95,14 @@ const updateComment = asyncHandler(async (req, res) => {
             throw new ApiError(404, "user with this comment not found")
         }
 
-        const updatecomment = await Comment.findByIdAndUpdate(
-            {
-                _id: commentId
-            },
+        const updatecomment = await Comment.findByIdAndUpdate( commentId,
             {
                 $set: {
-                    comment: newComment,
+                    content: newComment
                 }
             },
             {
-                new: true
+                new : true
             }
         )
 
@@ -156,7 +172,7 @@ const  getComment = asyncHandler(async(req, res) =>{
          throw new ApiError(404, "comment not found")
      }
  
-     const comment = Comment.findOne({_id: commentId})
+     const comment = await Comment.findOne({_id: commentId})
  
      if(!comment)
      {
