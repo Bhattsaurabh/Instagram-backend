@@ -14,7 +14,7 @@ const likeSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Note"
     },
-    owner: {
+    likedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         unique: false
