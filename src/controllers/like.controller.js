@@ -23,12 +23,12 @@ const togglePostLike = asyncHandler(async(req, res) =>{
          throw new ApiError(404, "post not found")
      }
  
-     const isLiked = await Like.findOne({post: postId, owner: req.user?._id})
+     const isLiked = await Like.findOne({post: postId, likedBy: req.user?._id})
  
  
-     const response = isLiked 
-                      ?  await Like.deleteOne({post: postId, owner: req.user?._id})  
-                      :  await Like.create({ post: postId, owner: req.user?._id })
+     const response = isLiked ? 
+                         await Like.deleteOne({post: postId, likedBy: req.user?._id})  
+                        : await Like.create({ post: postId, likedBy: req.user?._id })
  
  
      if(!response)
@@ -38,7 +38,7 @@ const togglePostLike = asyncHandler(async(req, res) =>{
  
      return res
      .status(200)
-     .json( new ApiResponse(200, response, "Post liked successfully"))
+     .json( new ApiResponse(200, response, isLiked === null ? "Post liked successfully" : "Post disliked successfully"))
    } catch (error) {
         throw new ApiError(400, error.message || "something went wrong failed to toggle like button")
    }
@@ -61,12 +61,12 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
           throw new ApiError(404, "reel not found")
       }
   
-      const isLiked = await Like.findOne({reel: reelId, owner: req.user?._id})
+      const isLiked = await Like.findOne({reel: reelId, likedBy: req.user?._id})
   
   
       const response = isLiked 
-                       ?  await Like.deleteOne({reel: reelId, owner: req.user?._id})  
-                       :  await Like.create({ reel: reelId, owner: req.user?._id })
+                       ?  await Like.deleteOne({reel: reelId, likedBy: req.user?._id})  
+                       :  await Like.create({ reel: reelId, likedBy: req.user?._id })
   
   
       if(!response)
@@ -76,7 +76,7 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
   
       return res
       .status(200)
-      .json( new ApiResponse(200, response, "Reel liked successfully"))
+      .json( new ApiResponse(200, response, isLiked === null ? "Reel liked successfully" : "Reel disliked successfully"))
     } catch (error) {
          throw new ApiError(400, error.message || "something went wrong failed to toggle like button")
     }
@@ -98,12 +98,12 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
           throw new ApiError(404, "note not found")
       }
   
-      const isLiked = await Like.findOne({note: noteId, owner: req.user?._id})
+      const isLiked = await Like.findOne({note: noteId, likedBy: req.user?._id})
   
   
       const response = isLiked 
-                       ?  await Like.deleteOne({ note: noteId, owner: req.user?._id })  
-                       :  await Like.create({ note: noteId, owner: req.user?._id })
+                       ?  await Like.deleteOne({ note: noteId, likedBy: req.user?._id })  
+                       :  await Like.create({ note: noteId, likedBy: req.user?._id })
   
   
       if(!response)
@@ -113,7 +113,7 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
   
       return res
       .status(200)
-      .json( new ApiResponse(200, response, "Note liked successfully"))
+      .json( new ApiResponse(200, response, isLiked === null ? "Note liked successfully" : "Note disliked successfully" ))
     } catch (error) {
          throw new ApiError(400, error.message || "something went wrong failed to toggle like button")
     }
@@ -124,8 +124,10 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
 
     try {
         const userId = req.user?._id
+       // console.log(userId);
+        
     
-        if(userId)
+        if(!userId)
         {
             throw new ApiError(401, "unauthorized user")
         }
@@ -144,35 +146,10 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
                     as : "posts",
                     pipeline: [
                         {
-                            from: "User",
-                            localField: "owner",
-                            foreignField: "_id",
-                            as: "owner",
-                            pipeline: [
-                                {
-                                    $project: {
-                                            username: 1,
-                                            email: 1,
-                                            avatar: 1
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            $addFields:{
-                                postOwner: {
-                                    $first: "$owner"
-                                }
-                            }
-                        },
-                        {
-                            $addFields:{
-                                post: "$image.url"
-                            }
-                        },
-                        {
-                            $addFields:{
-                                caption : "$caption"
+                            $project: {
+                                image: 1,
+                                caption: 1,
+                                audio: 1
                             }
                         }
                     ]
@@ -181,6 +158,8 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
         ]
         
         const likedPosts = await Like.aggregate(pipeline)
+       // console.log(likedPosts);
+        
     
         if(!likedPosts)
         {
