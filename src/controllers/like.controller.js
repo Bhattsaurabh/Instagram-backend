@@ -4,7 +4,7 @@ import { ApiResponse } from '../utils/ApiResponse.js'
 import {Post} from '../models/post.model.js'
 import {Reel} from '../models/reel.model.js'
 import { Like } from '../models/like.model.js'
-import mongoose from 'mongoose'
+import mongoose, { mongo } from 'mongoose'
 
 
 
@@ -133,28 +133,59 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
         }
     
         const pipeline = [
-            {
-                $match: {
-                    likedBy: new mongoose.Types.ObjectId(userId)
+                {
+                    $match: {
+                       $and: [
+                         { 
+                            likedBy: new mongoose.Types.ObjectId(userId)  
+                          },
+                         {
+                           post: {
+                              $exists: true
+                           } 
+                         }
+                       ]
+                    }
+                },
+                {
+                    $lookup: {
+                        from : "posts",
+                        localField: "post",
+                        foreignField: "_id",
+                        as: "posts",
+                        pipeline: [
+                            {
+                                $project:{
+                                    image: 1,
+                                    caption:1,
+                                    audio:1
+                                }
+                            },
+                            
+                        ]
+                    }
+                },
+                {
+                    $lookup: {
+                        from : "users",
+                        localField: "likedBy",
+                        foreignField: "_id",
+                        as: "postedBy",
+                        pipeline: [
+                            {
+                                $project:{
+                                    username: 1,
+                                    avatar:1
+                                }
+                            },
+                            
+                        ]
+                    }
+
                 }
-            },
-            {
-                $lookup: {
-                    from: "Post",
-                    localField: "post",
-                    foreignField: "_id",
-                    as : "posts",
-                    pipeline: [
-                        {
-                            $project: {
-                                image: 1,
-                                caption: 1,
-                                audio: 1
-                            }
-                        }
-                    ]
-                }
-            }
+               
+                  
+        
         ]
         
         const likedPosts = await Like.aggregate(pipeline)
@@ -181,7 +212,7 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
     try {
         const userId = req.user?._id
     
-        if(userId)
+        if(!userId)
         {
             throw new ApiError(401, "unauthorized user")
         }
@@ -189,52 +220,49 @@ const toggleReelLike = asyncHandler(async(req, res) =>{
         const pipeline = [
             {
                 $match: {
-                    likedBy: new mongoose.Types.ObjectId(userId)
+                    $and:[
+                        {
+                            likedBy: new mongoose.Types.ObjectId(userId)
+                        },
+                        {
+                            reel : {
+                                $exists: true
+                            }
+                        }
+
+                    ]
                 }
             },
             {
                 $lookup: {
-                    from: "Reel",
+                    from: "reels",
                     localField: "reel",
                     foreignField: "_id",
                     as : "reels",
                     pipeline: [
                         {
-                            from: "User",
-                            localField: "owner",
-                            foreignField: "_id",
-                            as: "owner",
-                            pipeline: [
-                                {
-                                    $project: {
-                                            username: 1,
-                                            email: 1,
-                                            avatar: 1
-                                    }
+                            $project: {
+                                    videoFile: 1,
+                                    thumbnail: 1,
+                                    caption: 1,
+                                    audio: 1
                                 }
-                            ]
-                        },
+                        }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "likedBy",
+                    foreignField: "_id",
+                    as : "postedBy",
+                    pipeline: [
                         {
-                            $addFields:{
-                                reelOwner: {
-                                    $first: "$owner"
+                            $project: {
+                                    username: 1,
+                                    avatar: 1
                                 }
-                            }
-                        },
-                        {
-                            $addFields:{
-                                videoFile: "$videoFile.url"
-                            }
-                        },
-                        {
-                            $addFields:{
-                                thumbnail: "$thumbnail.url"
-                            }
-                        },
-                        {
-                            $addFields:{
-                                caption : "$caption"
-                            }
                         }
                     ]
                 }
