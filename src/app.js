@@ -23,6 +23,7 @@ import reelRouter from './routes/reel.routes.js'
 import noteRouter from './routes/note.routes.js'
 import commentRouter from './routes/comment.routes.js'
 import likeRouter from './routes/like.routes.js'
+import followingRouter from './routes/following.routes.js'
 
 
 
@@ -32,5 +33,8 @@ app.use("/api/v1/reels", reelRouter)
 app.use("/api/v1/notes", noteRouter)
 app.use("/api/v1/comments", commentRouter)
 app.use("/api/v1/likes", likeRouter)
+app.use("/api/v1/followings", followingRouter)
+
+
 
 export {app}
