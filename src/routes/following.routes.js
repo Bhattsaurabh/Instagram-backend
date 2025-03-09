@@ -14,7 +14,7 @@ router.route("/toggle-follow-button/:instaId").patch(verifyJWT, toggleFollow)
 
 router.route("/get-followers/:instaId").get(verifyJWT, getFollowersAccounts)
 
-router.route("/get-following/:instaId").get(verifyJWT, getFollowingAccounts)
+router.route("/get-following").get(verifyJWT, getFollowingAccounts)
 
 
 

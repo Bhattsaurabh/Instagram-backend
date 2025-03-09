@@ -95,25 +95,19 @@ const getFollowersAccounts = asyncHandler(async(req, res)  =>{
 
 })
 
-
 const getFollowingAccounts = asyncHandler(async(req, res)  =>{
 
     const userId = req.user?._id
-    const {instaId} = req.params
 
     if(!userId)
     {
         throw new ApiError(401, "unauthorized user")
     }
-    if(!userId)
-    {
-        throw new ApiError(404, "account not found")
-    }
 
     const pipeline = [
         {
             $match: {
-                follower: new mongoose.Types.ObjectId(instaId)
+                follower: new mongoose.Types.ObjectId(userId)
             }
         },
         {
